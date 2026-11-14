@@ -1,0 +1,16 @@
+# Datos pesados / dumps (no versionar)
+servidor/capas/datos/
+servidor/*.dump
+servidor/*.tgz
+servidor/carga.log
+inventario.txt
+
+# Dependencias y secretos
+node_modules/
+.env
+
+# Basura de sistemas de archivos y tooling local
+*:Zone.Identifier
+.directory
+.atl/
+.DS_Store
