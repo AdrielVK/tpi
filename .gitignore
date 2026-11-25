@@ -8,6 +8,12 @@ inventario.txt
 # Dependencias y secretos
 node_modules/
 .env
+.env.local
+.env.*.local
+
+# Build del frontend
+frontend/dist/
+frontend/.vite/
 
 # Basura de sistemas de archivos y tooling local
 *:Zone.Identifier

@@ -154,6 +154,51 @@ Revisá en *Data → Layers* que estén las capas del workspace `sig`.
 
 ---
 
+## 9. Levantar la aplicación web (frontend)
+
+La app está en `frontend/` (React + OpenLayers) y consume las capas del GeoServer. No tiene backend propio.
+Requisitos: Node.js 18+ (probado con 22) y los contenedores del paso 5 levantados.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Abrí <http://localhost:5173>.
+
+Funcionalidades (consigna a.3):
+
+- Navegación del mapa (paneo, zoom, control de zoom y barra de escala).
+- Activar/desactivar capas desde el panel izquierdo (catálogo agrupado con buscador).
+- Leyenda por capa (`GetLegendGraphic`) y escala de visualización viva (1:N).
+- Consulta gráfica por **punto** y por **rectángulo** sobre la capa elegida, con tabla de atributos y resaltado en el mapa.
+- Medición de distancias (geodésica, en metros/kilómetros).
+- Alta de nuevas observaciones por WFS-T en `ign250.observaciones` (se dibuja un punto y se completan los atributos).
+
+Configuración opcional (variables de entorno al ejecutar `npm run dev`):
+
+| Variable | Default | Uso |
+|---|---|---|
+| `VITE_GEOSERVER_URL` | `http://localhost:8081/geoserver` | URL base de GeoServer |
+| `VITE_GEOSERVER_USER` | `admin` | Usuario para WFS-T (solo desarrollo) |
+| `VITE_GEOSERVER_PASSWORD` | `geoserver` | Contraseña para WFS-T (solo desarrollo) |
+
+> El alta por WFS-T exige autenticación porque GeoServer no permite escritura anónima. Son las credenciales de desarrollo del compose; no usarlas en un entorno real.
+
+> CORS: el `docker-compose.yml` ya habilita `Authorization` en `CORS_ALLOWED_HEADERS` (necesario para el WFS-T desde el navegador). Si venías de un contenedor anterior, recreá GeoServer una vez: `docker compose up -d --force-recreate geoserver` (no borra datos).
+
+Pruebas y build:
+
+```bash
+npm test        # tests de los helpers (Vitest)
+npm run build   # build de producción en frontend/dist
+```
+
+> La leyenda usa el estilo por defecto de GeoServer hasta que se carguen los SLD por clase (pendiente "Estilos SLD"). La vista del mapa trabaja en EPSG:3857; los datos se consultan y escriben en EPSG:4326.
+
+---
+
 ## Referencia rápida de conexiones
 
 El host y el puerto dependen de **desde dónde** te conectás:
@@ -230,8 +275,8 @@ Estas credenciales son solo para el entorno local del TP. No usarlas en un entor
 - [x] Carga de las capas del IGN en PostGIS (esquema `ign250`)
 - [x] Publicación de las capas en GeoServer (WMS / WFS)
 - [ ] Estilos SLD en `servidor/estilos/`
-- [ ] Capa editable `observaciones` publicada con WFS-T
+- [x] Capa editable `observaciones` publicada con WFS-T
 - [ ] Análisis de la RN11 (longitud, buffers de 10 y 20 km, población, puentes)
-- [ ] Aplicación web en `frontend/`
+- [x] Aplicación web en `frontend/` (visualización, capas, leyenda, consultas, medición y alta WFS-T)
 - [ ] Informe (consigna b)
 - [ ] Mapa A4 en PDF (consigna c)
