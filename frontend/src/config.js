@@ -63,7 +63,7 @@ export const LAYERS = [
   { id: 'marcas_y_senales', label: 'Marcas y senales', group: 'Vias de comunicacion' },
   { id: 'senalizaciones', label: 'Senalizaciones', group: 'Vias de comunicacion' },
 
-  { id: 'localidades', label: 'Localidades', group: 'Poblacion', visible: true },
+  { id: 'localidades', label: 'Localidades', group: 'Poblacion' },
 
   { id: 'curso_de_agua_hid', label: 'Cursos de agua', group: 'Hidrografia' },
   { id: 'espejo_de_agua_hid', label: 'Espejos de agua', group: 'Hidrografia' },

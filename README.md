@@ -221,6 +221,8 @@ Funcionalidades (consigna a.3):
 - Medición de distancias (geodésica, en metros/kilómetros).
 - Alta de nuevas observaciones por WFS-T en `ign250.observaciones` (se dibuja un punto y se completan los atributos).
 
+**Interfaz (Meridiano Glass).** Mapa a pantalla completa con paneles flotantes de vidrio esmerilado, acento aguamarina `#14B8A6` y tipografía Inter + JetBrains Mono. Incluye tema claro/oscuro (botón en el header, o `?theme=dark` para probar), paneles colapsables, árbol de capas en acordeones con buscador, contador y opacidad por capa, herramientas en grilla 2×2 y estados vacíos con iconos. `localidades` inicia apagada porque usa el estilo por defecto de GeoServer; se activa desde Capas.
+
 Configuración opcional (variables de entorno al ejecutar `npm run dev`):
 
 | Variable | Default | Uso |

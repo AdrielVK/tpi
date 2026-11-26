@@ -1,9 +1,33 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SIG IGN 250 - TPI</title>
+    <meta name="color-scheme" content="light dark" />
+    <title>Meridiano · SIG IGN 250</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // Aplica el tema guardado antes del primer paint (evita flash).
+      try {
+        var params = new URLSearchParams(location.search);
+        var forced = params.get('theme');
+        var stored = localStorage.getItem('meridiano-theme');
+        if (forced === 'dark' || forced === 'light') {
+          document.documentElement.dataset.theme = forced;
+        } else if (stored === 'dark' || stored === 'light') {
+          document.documentElement.dataset.theme = stored;
+        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      } catch (error) {
+        /* sin almacenamiento */
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

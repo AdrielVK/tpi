@@ -1,4 +1,20 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Compass,
+  Crosshair,
+  Eraser,
+  Layers,
+  LocateFixed,
+  MapPin,
+  Moon,
+  PanelRightClose,
+  Plus,
+  Ruler,
+  ScanSearch,
+  SlidersHorizontal,
+  SquareDashed,
+  Sun,
+} from 'lucide-react';
 import MapView from './components/MapView.jsx';
 import LayerPanel from './components/LayerPanel.jsx';
 import LegendPanel from './components/LegendPanel.jsx';
@@ -21,39 +37,62 @@ import {
   geoserverAuthHeader,
 } from './config.js';
 import { combineCql } from './lib/filters.js';
-import { formatDistance, formatScale } from './lib/geo.js';
 import { buildGetFeatureUrl, buildInsertXml, parseTransactionSummary } from './lib/wfs.js';
+import { formatDistance, formatScale } from './lib/geo.js';
 
 const TOOLS = [
   {
     id: 'query-point',
-    label: 'Consultar por punto',
-    hint: 'Haga clic en el mapa para consultar la capa elegida en ese punto.',
+    label: 'Consultar punto',
+    hint: 'Hacé clic en el mapa para consultar la capa elegida en ese punto.',
+    icon: MapPin,
   },
   {
     id: 'query-rect',
-    label: 'Consultar por rectangulo',
-    hint: 'Arrastre sobre el mapa para dibujar el rectangulo de consulta.',
+    label: 'Consultar área',
+    hint: 'Arrastrá sobre el mapa para dibujar el rectángulo de consulta.',
+    icon: SquareDashed,
   },
   {
     id: 'measure',
     label: 'Medir distancia',
-    hint: 'Dibuje una linea; cada trazo se agrega a la lista de mediciones.',
+    hint: 'Dibujá una línea; cada trazo se suma a la lista de mediciones.',
+    icon: Ruler,
   },
   {
     id: 'insert-point',
-    label: 'Agregar observacion',
-    hint: 'Haga clic en el mapa para ubicar la nueva observacion.',
+    label: 'Agregar observación',
+    hint: 'Hacé clic en el mapa para ubicar la nueva observación.',
+    icon: Plus,
   },
 ];
 
+const getInitialTheme = () => {
+  try {
+    const forced = new URLSearchParams(window.location.search).get('theme');
+    if (forced === 'light' || forced === 'dark') return forced;
+    const stored = localStorage.getItem('meridiano-theme');
+    if (stored === 'light' || stored === 'dark') return stored;
+  } catch {
+    /* almacenamiento no disponible */
+  }
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return 'light';
+};
+
+const INITIAL_OPACITY = Object.fromEntries(LAYERS.map((layer) => [layer.id, 1]));
+
 export default function App() {
   const [visible, setVisible] = useState(INITIAL_VISIBILITY);
+  const [opacity, setOpacity] = useState(INITIAL_OPACITY);
   const [tool, setTool] = useState(null);
   const [queryLayer, setQueryLayer] = useState('red_vial');
   const [results, setResults] = useState(null);
   const [measurements, setMeasurements] = useState([]);
   const [scale, setScale] = useState(null);
+  const [pointer, setPointer] = useState(null);
   const [mapApi, setMapApi] = useState(null);
   const [overlayClearKey, setOverlayClearKey] = useState(0);
   const [insertDraft, setInsertDraft] = useState(null);
@@ -62,6 +101,18 @@ export default function App() {
   const [notice, setNotice] = useState(null);
   const [roadActive, setRoadActive] = useState(DEFAULT_ROAD_ACTIVE);
   const [secondaryActive, setSecondaryActive] = useState(DEFAULT_SECONDARY_ACTIVE);
+  const [leftOpen, setLeftOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(true);
+  const [theme, setTheme] = useState(getInitialTheme);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      localStorage.setItem('meridiano-theme', theme);
+    } catch {
+      /* almacenamiento no disponible */
+    }
+  }, [theme]);
 
   const roadCql = useMemo(() => combineCql(ROAD_CLASSES, roadActive), [roadActive]);
   const secondaryCql = useMemo(() => combineCql(SECONDARY_CLASSES, secondaryActive), [secondaryActive]);
@@ -79,7 +130,9 @@ export default function App() {
   }, []);
 
   const toggleSecondaryClass = useCallback((id) => {
-    setSecondaryActive((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+    setSecondaryActive((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
   }, []);
 
   const applySecondaryPreset = useCallback((preset) => {
@@ -92,6 +145,19 @@ export default function App() {
 
   const setAllLayers = useCallback((value) => {
     setVisible(Object.fromEntries(LAYERS.map((layer) => [layer.id, value])));
+  }, []);
+
+  const setLayerOpacity = useCallback((id, value) => {
+    setOpacity((prev) => ({ ...prev, [id]: value }));
+  }, []);
+
+  const handlePointerMove = useCallback(({ lon, lat }) => {
+    setPointer((prev) => {
+      if (prev && Math.abs(prev.lon - lon) < 0.00001 && Math.abs(prev.lat - lat) < 0.00001) {
+        return prev;
+      }
+      return { lon, lat };
+    });
   }, []);
 
   const handleQuery = useCallback(
@@ -177,7 +243,7 @@ export default function App() {
         setVisible((prev) => ({ ...prev, [INSERT_LAYER]: true }));
         mapApi?.refreshLayer?.(INSERT_LAYER);
         mapApi?.clearOverlay?.();
-        setNotice(`Observacion guardada en ign250.${INSERT_LAYER}.`);
+        setNotice(`Observación guardada en ign250.${INSERT_LAYER}.`);
       } catch (error) {
         setInsertError(String(error?.message ?? error));
       } finally {
@@ -187,33 +253,94 @@ export default function App() {
     [insertDraft, mapApi],
   );
 
-  const clearMeasurements = () => {
+  const clearMeasurements = useCallback(() => {
     setMeasurements([]);
     setOverlayClearKey((key) => key + 1);
-  };
+  }, []);
 
+  const zoomToResults = useCallback(() => {
+    mapApi?.zoomToResults?.();
+  }, [mapApi]);
+
+  const collapseLeft = useCallback(() => setLeftOpen(false), []);
+  const collapseRight = useCallback(() => setRightOpen(false), []);
+  const toggleTheme = useCallback(() => setTheme((value) => (value === 'dark' ? 'light' : 'dark')), []);
+
+  const activeCount = LAYERS.filter((layer) => visible[layer.id]).length;
   const activeTool = TOOLS.find((entry) => entry.id === tool);
+  const ActiveIcon = activeTool?.icon;
 
   return (
     <div className="app">
-      <header className="header">
-        <div>
-          <h1>SIG IGN 250 — Trabajo Practico Integrador</h1>
-          <p className="subtitle">Visualizacion de capas servidas por GeoServer (WMS / WFS) · {GEOSERVER_URL}</p>
+      <main className="map-wrap">
+        <MapView
+          visible={visible}
+          tool={tool}
+          results={results}
+          overlayClearKey={overlayClearKey}
+          wmsFilters={wmsFilters}
+          layerOpacity={opacity}
+          onMeasure={handleMeasure}
+          onQuery={handleQuery}
+          onInsertPoint={handleInsertPoint}
+          onScaleChange={setScale}
+          onMapReady={setMapApi}
+          onPointerMove={handlePointerMove}
+        />
+      </main>
+
+      <header className="header-pill glass">
+        <div className="brand">
+          <span className="brand-mark">
+            <Compass size={19} aria-hidden="true" />
+          </span>
+          <div className="brand-text">
+            <span className="brand-name">Meridiano</span>
+            <span className="brand-sub">SIG IGN 250 · WMS / WFS</span>
+          </div>
         </div>
-        <div className="header-status">
-          {scale && <span className="scale-badge">Escala {formatScale(scale.denominator)}</span>}
-          <button type="button" onClick={() => mapApi?.fitChaco?.()}>Ir al Chaco</button>
+        <div className="header-actions">
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => mapApi?.fitChaco?.()}
+            title="Centrar en la Provincia del Chaco"
+          >
+            <LocateFixed size={15} aria-hidden="true" />
+            <span>Chaco</span>
+          </button>
+          <button
+            type="button"
+            className="btn btn--icon btn--ghost"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+            title="Cambiar tema"
+          >
+            {theme === 'dark' ? <Sun size={17} aria-hidden="true" /> : <Moon size={17} aria-hidden="true" />}
+          </button>
         </div>
       </header>
 
-      <div className="body">
-        <aside className="panel left">
+      {activeTool && ActiveIcon && (
+        <div className="map-hint glass glass--opaque" role="status">
+          <ActiveIcon size={16} className="hint-icon" aria-hidden="true" />
+          <span className="hint-text">{activeTool.hint}</span>
+          <button type="button" className="btn btn--sm" onClick={() => setTool(null)}>
+            Cancelar
+          </button>
+        </div>
+      )}
+
+      {leftOpen ? (
+        <aside className="panel panel-left glass glass--opaque" aria-label="Panel de capas">
           <LayerPanel
             layers={LAYERS}
             visible={visible}
             onToggle={toggleLayer}
             onAll={setAllLayers}
+            opacity={opacity}
+            onOpacityChange={setLayerOpacity}
+            onCollapse={collapseLeft}
             roadClasses={ROAD_CLASSES}
             roadActive={roadActive}
             onRoadToggle={toggleRoadClass}
@@ -227,86 +354,117 @@ export default function App() {
           />
           <LegendPanel layers={LAYERS} visible={visible} />
         </aside>
+      ) : (
+        <button
+          type="button"
+          className="panel-toggle panel-toggle--left glass glass--opaque"
+          onClick={() => setLeftOpen(true)}
+          aria-label="Mostrar panel de capas"
+        >
+          <Layers size={16} aria-hidden="true" />
+          Capas
+          <span className="panel-count">
+            {activeCount}/{LAYERS.length}
+          </span>
+        </button>
+      )}
 
-        <main className="map-wrap">
-          <MapView
-            visible={visible}
-            tool={tool}
-            results={results}
-            overlayClearKey={overlayClearKey}
-            wmsFilters={wmsFilters}
-            onMeasure={handleMeasure}
-            onQuery={handleQuery}
-            onInsertPoint={handleInsertPoint}
-            onScaleChange={setScale}
-            onMapReady={setMapApi}
-          />
-          {activeTool && (
-            <div className="map-hint">
-              <strong>{activeTool.label}</strong>
-              <span>{activeTool.hint}</span>
-              <button type="button" onClick={() => setTool(null)}>Cancelar</button>
-            </div>
-          )}
-          <div className="map-footer muted small">
-            Base: OpenStreetMap · Datos: IGN 250 · Escala nominal de las capas: 1:250.000
+      {rightOpen ? (
+        <aside className="panel panel-right glass glass--opaque" aria-label="Panel de consultas">
+          <div className="panel-head">
+            <h2 className="panel-title">
+              <SlidersHorizontal size={15} aria-hidden="true" />
+              Consultas y edición
+            </h2>
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={collapseRight}
+              aria-label="Ocultar panel de consultas"
+              title="Ocultar panel"
+            >
+              <PanelRightClose size={17} aria-hidden="true" />
+            </button>
           </div>
-        </main>
 
-        <aside className="panel right">
-          <section>
-            <h2>Consultas y edicion</h2>
+          <section className="section">
             <label className="field">
               Capa de consulta
               <select value={queryLayer} onChange={(event) => setQueryLayer(event.target.value)}>
                 {LAYERS.map((layer) => (
-                  <option key={layer.id} value={layer.id}>{layer.label}</option>
+                  <option key={layer.id} value={layer.id}>
+                    {layer.label}
+                  </option>
                 ))}
               </select>
             </label>
+
             <div className="tool-grid">
-              {TOOLS.map((entry) => (
-                <button
-                  key={entry.id}
-                  type="button"
-                  className={tool === entry.id ? 'active' : ''}
-                  onClick={() => {
-                    setNotice(null);
-                    setTool((current) => (current === entry.id ? null : entry.id));
-                  }}
-                >
-                  {entry.label}
-                </button>
-              ))}
+              {TOOLS.map((entry) => {
+                const Icon = entry.icon;
+                const active = tool === entry.id;
+                return (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    className={`tool-btn${active ? ' is-active' : ''}`}
+                    aria-pressed={active}
+                    onClick={() => {
+                      setNotice(null);
+                      setTool((current) => (current === entry.id ? null : entry.id));
+                    }}
+                  >
+                    <Icon size={18} aria-hidden="true" />
+                    <span>{entry.label}</span>
+                  </button>
+                );
+              })}
             </div>
-            <p className="muted small">
-              La consulta aplica a la capa elegida arriba. El alta siempre escribe en la capa
-              editable <code>{INSERT_LAYER}</code>.
+
+            <p className="hint">
+              La consulta aplica a la capa elegida. El alta escribe en <code>{INSERT_LAYER}</code>.
             </p>
           </section>
 
-          <section>
+          <section className="section">
             <div className="section-head">
-              <h2>Resultados de consulta</h2>
-              {results && <button type="button" onClick={() => setResults(null)}>Limpiar</button>}
+              <h3 className="section-title">
+                <ScanSearch size={14} aria-hidden="true" />
+                Resultados
+              </h3>
+              {results && (
+                <button type="button" className="btn btn--sm btn--ghost" onClick={() => setResults(null)}>
+                  <Eraser size={13} aria-hidden="true" />
+                  Limpiar
+                </button>
+              )}
             </div>
-            <ResultsPanel results={results} onZoom={() => mapApi?.zoomToResults?.()} />
+            <ResultsPanel results={results} onZoom={zoomToResults} />
           </section>
 
-          <section>
+          <section className="section">
             <div className="section-head">
-              <h2>Mediciones</h2>
+              <h3 className="section-title">
+                <Ruler size={14} aria-hidden="true" />
+                Mediciones
+              </h3>
               {measurements.length > 0 && (
-                <button type="button" onClick={clearMeasurements}>Limpiar</button>
+                <button type="button" className="btn btn--sm btn--ghost" onClick={clearMeasurements}>
+                  <Eraser size={13} aria-hidden="true" />
+                  Limpiar
+                </button>
               )}
             </div>
             {measurements.length === 0 ? (
-              <p className="muted">Sin mediciones. Use “Medir distancia”.</p>
+              <div className="empty-state">
+                <Ruler size={24} aria-hidden="true" />
+                <p>Sin mediciones. Usá “Medir distancia”.</p>
+              </div>
             ) : (
-              <ol className="measurements">
+              <ol className="measure-list">
                 {measurements.map((meters, index) => (
-                  <li key={index}>
-                    <span>Medicion {index + 1}</span>
+                  <li key={index} className="measure-item">
+                    <span>Medición {index + 1}</span>
                     <strong>{formatDistance(meters)}</strong>
                   </li>
                 ))}
@@ -314,9 +472,40 @@ export default function App() {
             )}
           </section>
 
-          {notice && <p className="notice">{notice}</p>}
+          {notice && (
+            <div className="section">
+              <p className="notice">{notice}</p>
+            </div>
+          )}
         </aside>
-      </div>
+      ) : (
+        <button
+          type="button"
+          className="panel-toggle panel-toggle--right glass glass--opaque"
+          onClick={() => setRightOpen(true)}
+          aria-label="Mostrar panel de consultas"
+        >
+          <SlidersHorizontal size={16} aria-hidden="true" />
+          Herramientas
+        </button>
+      )}
+
+      <footer className="status-pill glass glass--opaque" aria-label="Estado del mapa">
+        <span className="status-dot" aria-hidden="true" />
+        <span className="status-item">
+          <Crosshair size={14} aria-hidden="true" />
+          <span className="status-label">Lat, Lon</span>
+          <span className="mono">
+            {pointer ? `${pointer.lat.toFixed(5)}, ${pointer.lon.toFixed(5)}` : '—'}
+          </span>
+        </span>
+        <span className="status-divider" aria-hidden="true" />
+        <span className="status-item">
+          <Ruler size={14} aria-hidden="true" />
+          <span className="status-label">Escala</span>
+          <span className="mono">{scale ? formatScale(scale.denominator) : '—'}</span>
+        </span>
+      </footer>
 
       {insertDraft && (
         <InsertDialog

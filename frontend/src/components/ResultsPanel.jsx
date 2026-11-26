@@ -1,3 +1,5 @@
+import { memo } from 'react';
+import { Loader2, SearchX } from 'lucide-react';
 import { LAYERS } from '../config.js';
 import { summarizeProperties } from '../lib/geo.js';
 
@@ -5,34 +7,55 @@ const MAX_ROWS = 60;
 
 const labelFor = (id) => LAYERS.find((layer) => layer.id === id)?.label ?? id;
 
-/** Tabla de atributos de la consulta grafica actual. */
-export default function ResultsPanel({ results, onZoom }) {
+/** Tabla de atributos de la consulta gráfica actual. */
+function ResultsPanel({ results, onZoom }) {
   if (!results) {
-    return <p className="muted">Elija una capa y consulte por punto o por rectangulo.</p>;
+    return (
+      <div className="empty-state">
+        <SearchX size={26} aria-hidden="true" />
+        <p>Elegí una capa y consultá por punto o por área para ver sus atributos.</p>
+      </div>
+    );
   }
+
   if (results.loading) {
-    return <p className="muted">Consultando…</p>;
+    return (
+      <div className="spinner">
+        <Loader2 size={16} aria-hidden="true" />
+        Consultando…
+      </div>
+    );
   }
+
   if (results.error) {
     return <p className="error">Error al consultar: {results.error}</p>;
   }
 
   const features = results.geojson?.features ?? [];
   if (features.length === 0) {
-    return <p className="muted">Sin resultados en {labelFor(results.layer)} para el area consultada.</p>;
+    return (
+      <div className="empty-state">
+        <SearchX size={26} aria-hidden="true" />
+        <p>Sin resultados en {labelFor(results.layer)} para el área consultada.</p>
+      </div>
+    );
   }
 
   return (
     <div>
-      <div className="row-actions results-head">
-        <span><strong>{features.length}</strong> resultado(s) en {labelFor(results.layer)}</span>
-        <button type="button" onClick={onZoom}>Zoom a resultados</button>
+      <div className="result-head">
+        <span>
+          <strong className="mono">{features.length}</strong> resultado(s) en {labelFor(results.layer)}
+        </span>
+        <button type="button" className="btn btn--sm" onClick={onZoom}>
+          Zoom
+        </button>
       </div>
-      <ol className="results">
+      <ol className="result-list">
         {features.slice(0, MAX_ROWS).map((feature, index) => (
-          <li key={feature.id ?? index}>
+          <li key={feature.id ?? index} className="result-card">
             <div className="result-title">{feature.id ?? `feature ${index + 1}`}</div>
-            <table>
+            <table className="result-table">
               <tbody>
                 {summarizeProperties(feature.properties).map((prop) => (
                   <tr key={prop.key}>
@@ -46,8 +69,12 @@ export default function ResultsPanel({ results, onZoom }) {
         ))}
       </ol>
       {features.length > MAX_ROWS && (
-        <p className="muted small">Mostrando {MAX_ROWS} de {features.length} resultados.</p>
+        <p className="legend-note">
+          Mostrando {MAX_ROWS} de {features.length} resultados.
+        </p>
       )}
     </div>
   );
 }
+
+export default memo(ResultsPanel);

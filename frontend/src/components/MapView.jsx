@@ -10,7 +10,7 @@ import Draw, { createBox } from 'ol/interaction/Draw';
 import ScaleLine from 'ol/control/ScaleLine';
 import { defaults as defaultControls } from 'ol/control';
 import GeoJSON from 'ol/format/GeoJSON';
-import { fromLonLat } from 'ol/proj';
+import { fromLonLat, toLonLat } from 'ol/proj';
 import { getLength } from 'ol/sphere';
 import Style from 'ol/style/Style';
 import Fill from 'ol/style/Fill';
@@ -59,11 +59,13 @@ export default function MapView({
   results,
   overlayClearKey,
   wmsFilters,
+  layerOpacity,
   onMeasure,
   onQuery,
   onInsertPoint,
   onScaleChange,
   onMapReady,
+  onPointerMove,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -73,7 +75,7 @@ export default function MapView({
   const drawRef = useRef(null);
   const callbacksRef = useRef({});
 
-  callbacksRef.current = { onMeasure, onQuery, onInsertPoint, onScaleChange, onMapReady };
+  callbacksRef.current = { onMeasure, onQuery, onInsertPoint, onScaleChange, onMapReady, onPointerMove };
 
   useEffect(() => {
     const overlaySource = new VectorSource();
@@ -127,6 +129,12 @@ export default function MapView({
     map.on('moveend', emitScale);
     emitScale();
 
+    map.on('pointermove', (event) => {
+      if (event.dragging || !event.coordinate) return;
+      const [lon, lat] = toLonLat(event.coordinate);
+      callbacksRef.current.onPointerMove?.({ lon, lat });
+    });
+
     callbacksRef.current.onMapReady?.({
       map,
       zoomToResults: () => {
@@ -163,6 +171,17 @@ export default function MapView({
       source.updateParams({ CQL_FILTER: next });
     }
   }, [wmsFilters]);
+
+  useEffect(() => {
+    if (!wmsRef.current) return;
+    for (const [id, value] of Object.entries(layerOpacity ?? {})) {
+      const layer = wmsRef.current.get(id);
+      if (!layer) continue;
+      const next = Number.isFinite(value) ? value : 1;
+      if (layer.getOpacity() === next) continue;
+      layer.setOpacity(next);
+    }
+  }, [layerOpacity]);
 
   useEffect(() => {
     const map = mapRef.current;
