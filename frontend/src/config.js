@@ -14,6 +14,8 @@ export const FEATURE_NS = 'http://sig.local';
 export const INSERT_LAYER = 'observaciones';
 /** Escala nominal de las capas del SIG IGN 250. */
 export const NOMINAL_SCALE = '1:250.000';
+/** Denominador numerico de la escala nominal (para GetLegendGraphic). */
+export const NOMINAL_SCALE_DENOMINATOR = 250000;
 /** Centro y zoom iniciales (Provincia del Chaco). */
 export const CHACO_CENTER = [-59.2, -26.9];
 export const CHACO_ZOOM = 7;
@@ -33,9 +35,13 @@ export function geoserverAuthHeader() {
   return `Basic ${btoa(`${GEOSERVER_USER}:${GEOSERVER_PASSWORD}`)}`;
 }
 
-/** URL de GetLegendGraphic para la leyenda de una capa. */
+/**
+ * URL de GetLegendGraphic para la leyenda de una capa.
+ * SCALE fija la escala de la leyenda: en estilos que varian por escala
+ * (red_vial) evita que se repita una entrada por tramo.
+ */
 export function legendUrl(layerId) {
-  return `${WMS_URL}?service=WMS&version=1.1.1&request=GetLegendGraphic&format=image/png&layer=${WORKSPACE}:${encodeURIComponent(layerId)}`;
+  return `${WMS_URL}?service=WMS&version=1.1.1&request=GetLegendGraphic&format=image/png&layer=${WORKSPACE}:${encodeURIComponent(layerId)}&SCALE=${NOMINAL_SCALE_DENOMINATOR}`;
 }
 
 /**

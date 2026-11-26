@@ -138,7 +138,7 @@ Revisá en *Data → Layers* que estén las capas del workspace `sig`.
 
 ### Criterio de color de las vías de comunicación
 
-**Clasificación.** La capa `red_vial` no distingue urbano/rural: la jerarquía se arma combinando `administra` × `tipo`. La red `Vecinal` es la red local (calles y caminos). Los cinco niveles de más a menos importante:
+**Clasificación.** La capa `red_vial` no distingue urbano/rural: la jerarquía se arma combinando `administra` × `tipo`. La red `Vecinal` es la red local (calles y caminos). Los cinco niveles de más a menos importante (grosores del tramo más cercano, < 1:500.000):
 
 | Nivel | Filtro sobre `red_vial` | Grosor | Color | Casing |
 |---|---|---|---|---|
@@ -149,6 +149,17 @@ Revisá en *Data → Layers* que estén las capas del workspace `sig`.
 | 5. Calle/camino local sin pavimentar | `Vecinal` + no pavimentado | 1.6 px (0.8x) | `#fbf2d8` | `#9a9384` |
 
 Partición verificada: 8060 + 7678 + 9255 + 2744 + 91218 = 118955 features, sin solapamiento.
+
+**Adaptación por escala.** El ancho no es fijo en todos los zooms. El SLD usa cuatro tramos con `MinScaleDenominator`/`MaxScaleDenominator`:
+
+| Escala de visualización | Factor de ancho |
+|---|---|
+| < 1:500.000 | 100% |
+| 1:500.000 – 1:1.000.000 | ~88% |
+| 1:1.000.000 – 1:2.000.000 | ~75% |
+| ≥ 1:2.000.000 | piso constante |
+
+Desde 1:2.000.000 el trazo no se reduce más: a nivel país queda fino pero legible y no se forma un "bulto". La leyenda se pide con `SCALE=250000` para mostrar una sola entrada por clase.
 
 **Resto de vías.** `vias_secundarias` (huellas y senderos) usa otra familia, marrón/ocre, con la misma lógica: Huella/Rodera `#8d5a1e` (1x), Senda `#b07b33` (0.8x), Picada `#d3a86a` (0.6x, discontinua). `red_ferroviaria` usa el símbolo convencional (gris oscuro con trazos blancos); puentes, señalizaciones, marcas y salvado de obstáculo usan símbolos puntuales.
 
