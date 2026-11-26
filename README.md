@@ -150,7 +150,7 @@ Revisá en *Data → Layers* que estén las capas del workspace `sig`.
 
 Partición verificada: 8060 + 7678 + 9255 + 2744 + 91218 = 118955 features, sin solapamiento.
 
-**Adaptación por escala.** El ancho no es fijo en todos los zooms. El SLD usa cuatro tramos con `MinScaleDenominator`/`MaxScaleDenominator`:
+**Adaptación por escala.** El ancho no es fijo en todos los zooms (aplica a `red_vial` y `vias_secundarias`). El SLD usa cuatro tramos con `MinScaleDenominator`/`MaxScaleDenominator`:
 
 | Escala de visualización | Factor de ancho |
 |---|---|
@@ -161,7 +161,7 @@ Partición verificada: 8060 + 7678 + 9255 + 2744 + 91218 = 118955 features, sin 
 
 Desde 1:2.000.000 el trazo no se reduce más: a nivel país queda fino pero legible y no se forma un "bulto". La leyenda se pide con `SCALE=250000` para mostrar una sola entrada por clase.
 
-**Resto de vías.** `vias_secundarias` (huellas y senderos) usa otra familia, marrón/ocre, con la misma lógica: Huella/Rodera `#8d5a1e` (1x), Senda `#b07b33` (0.8x), Picada `#d3a86a` (0.6x, discontinua). `red_ferroviaria` usa el símbolo convencional (gris oscuro con trazos blancos); puentes, señalizaciones, marcas y salvado de obstáculo usan símbolos puntuales.
+**Resto de vías.** `vias_secundarias` (huellas y senderos) usa otra familia, marrón/ocre, con la misma lógica: Huella/Rodera `#8d5a1e` (1x), Senda `#b07b33` (0.8x), Picada `#d3a86a` (0.6x, discontinua), y la misma adaptación por escala (piso desde 1:2.000.000). `red_ferroviaria` usa el símbolo convencional (gris oscuro con trazos blancos); puentes, señalizaciones, marcas y salvado de obstáculo usan símbolos puntuales.
 
 **Por qué esa gama.**
 - El **Manual de signos cartográficos del IGN** (en `servidor/capas/`) define los signos 41–48 (autopista, camino pavimentado, consolidado, tierra, huella, senda, picada) y un sistema de color de reproducción **CMYK** para imprenta. No fija una paleta RGB para web.
