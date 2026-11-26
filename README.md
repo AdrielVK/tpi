@@ -204,6 +204,7 @@ Funcionalidades (consigna a.3):
 
 - Navegación del mapa (paneo, zoom, control de zoom y barra de escala).
 - Activar/desactivar capas desde el panel izquierdo (catálogo agrupado con buscador).
+- Subfiltro por componente de las redes viales: rutas nacionales/provinciales, caminos locales, huellas/senderos. Se aplica al mapa **y** a las consultas.
 - Leyenda por capa (`GetLegendGraphic`) y escala de visualización viva (1:N).
 - Consulta gráfica por **punto** y por **rectángulo** sobre la capa elegida, con tabla de atributos y resaltado en el mapa.
 - Medición de distancias (geodésica, en metros/kilómetros).
@@ -229,6 +230,8 @@ npm run build   # build de producción en frontend/dist
 ```
 
 > La leyenda se genera con GetLegendGraphic: las capas de vías de comunicación ya tienen SLD por clase, así que muestran su jerarquía real. El resto de las capas usa el estilo por defecto de GeoServer. La vista del mapa trabaja en EPSG:3857; los datos se consultan y escriben en EPSG:4326.
+
+> El subfiltro de componentes viaja como `CQL_FILTER` al WMS (render) y al WFS (consultas). En WFS 1.1.0 el área se expresa como `BBOX` dentro del mismo CQL (GeoServer no acepta `bbox` y `cql_filter` juntos) y, para EPSG:4326, usa orden de ejes **lat,lon**.
 
 ---
 

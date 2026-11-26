@@ -1,19 +1,26 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import MapView from './components/MapView.jsx';
 import LayerPanel from './components/LayerPanel.jsx';
 import LegendPanel from './components/LegendPanel.jsx';
 import ResultsPanel from './components/ResultsPanel.jsx';
 import InsertDialog from './components/InsertDialog.jsx';
 import {
+  DEFAULT_ROAD_ACTIVE,
+  DEFAULT_SECONDARY_ACTIVE,
   FEATURE_NS,
   GEOSERVER_URL,
   INITIAL_VISIBILITY,
   INSERT_LAYER,
   LAYERS,
+  ROAD_CLASSES,
+  ROAD_PRESETS,
+  SECONDARY_CLASSES,
+  SECONDARY_PRESETS,
   WFS_URL,
   WORKSPACE,
   geoserverAuthHeader,
 } from './config.js';
+import { combineCql } from './lib/filters.js';
 import { formatDistance, formatScale } from './lib/geo.js';
 import { buildGetFeatureUrl, buildInsertXml, parseTransactionSummary } from './lib/wfs.js';
 
@@ -53,6 +60,31 @@ export default function App() {
   const [inserting, setInserting] = useState(false);
   const [insertError, setInsertError] = useState(null);
   const [notice, setNotice] = useState(null);
+  const [roadActive, setRoadActive] = useState(DEFAULT_ROAD_ACTIVE);
+  const [secondaryActive, setSecondaryActive] = useState(DEFAULT_SECONDARY_ACTIVE);
+
+  const roadCql = useMemo(() => combineCql(ROAD_CLASSES, roadActive), [roadActive]);
+  const secondaryCql = useMemo(() => combineCql(SECONDARY_CLASSES, secondaryActive), [secondaryActive]);
+  const wmsFilters = useMemo(
+    () => ({ red_vial: roadCql, vias_secundarias: secondaryCql }),
+    [roadCql, secondaryCql],
+  );
+
+  const toggleRoadClass = useCallback((id) => {
+    setRoadActive((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  }, []);
+
+  const applyRoadPreset = useCallback((preset) => {
+    setRoadActive(preset.classes ?? ROAD_CLASSES.map((entry) => entry.id));
+  }, []);
+
+  const toggleSecondaryClass = useCallback((id) => {
+    setSecondaryActive((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  }, []);
+
+  const applySecondaryPreset = useCallback((preset) => {
+    setSecondaryActive(preset.classes ?? SECONDARY_CLASSES.map((entry) => entry.id));
+  }, []);
 
   const toggleLayer = useCallback((id) => {
     setVisible((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -68,6 +100,12 @@ export default function App() {
       setNotice(null);
       setResults({ layer: queryLayer, loading: true, geojson: null });
       try {
+        const cqlFilter =
+          queryLayer === 'red_vial'
+            ? roadCql
+            : queryLayer === 'vias_secundarias'
+              ? secondaryCql
+              : '';
         const url = buildGetFeatureUrl({
           baseUrl: GEOSERVER_URL,
           workspace: WORKSPACE,
@@ -76,6 +114,7 @@ export default function App() {
           point4326,
           extent4326,
           toleranceDegrees,
+          cqlFilter,
           maxFeatures: 200,
         });
         const response = await fetch(url);
@@ -91,7 +130,7 @@ export default function App() {
         });
       }
     },
-    [queryLayer],
+    [queryLayer, roadCql, secondaryCql],
   );
 
   const handleMeasure = useCallback((meters) => {
@@ -170,7 +209,22 @@ export default function App() {
 
       <div className="body">
         <aside className="panel left">
-          <LayerPanel layers={LAYERS} visible={visible} onToggle={toggleLayer} onAll={setAllLayers} />
+          <LayerPanel
+            layers={LAYERS}
+            visible={visible}
+            onToggle={toggleLayer}
+            onAll={setAllLayers}
+            roadClasses={ROAD_CLASSES}
+            roadActive={roadActive}
+            onRoadToggle={toggleRoadClass}
+            onRoadPreset={applyRoadPreset}
+            secondaryClasses={SECONDARY_CLASSES}
+            secondaryActive={secondaryActive}
+            onSecondaryToggle={toggleSecondaryClass}
+            onSecondaryPreset={applySecondaryPreset}
+            roadPresets={ROAD_PRESETS}
+            secondaryPresets={SECONDARY_PRESETS}
+          />
           <LegendPanel layers={LAYERS} visible={visible} />
         </aside>
 
@@ -180,6 +234,7 @@ export default function App() {
             tool={tool}
             results={results}
             overlayClearKey={overlayClearKey}
+            wmsFilters={wmsFilters}
             onMeasure={handleMeasure}
             onQuery={handleQuery}
             onInsertPoint={handleInsertPoint}

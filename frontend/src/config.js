@@ -108,3 +108,65 @@ export const LAYERS = [
 export const INITIAL_VISIBILITY = Object.fromEntries(
   LAYERS.map((layer) => [layer.id, Boolean(layer.visible)]),
 );
+
+// ---------------------------------------------------------------------------
+// Subfiltros de las redes viales (se aplican por CQL_FILTER en WMS y WFS)
+// ---------------------------------------------------------------------------
+
+const PAVED_TYPES =
+  "'Camino Pavimentado','Autopista con Camino Pavimentado Dual con Separador'";
+const UNPAVED_TYPES =
+  "'Camino Consolidado, Camino sin Pavimentar de Transitavilidad Permanente','Camino de Tierra, Camino sin Pavimentar de Transitavilidad Temporaria'";
+
+/** Componentes de red_vial (mismos 5 niveles que el SLD de jerarquia). */
+export const ROAD_CLASSES = [
+  {
+    id: 'nacional',
+    label: 'Rutas nacionales e internacionales',
+    cql: "administra IN ('Nacional','Internacional')",
+  },
+  {
+    id: 'provincial_pavimentada',
+    label: 'Rutas provinciales pavimentadas',
+    cql: `administra='Provincial' AND tipo IN (${PAVED_TYPES})`,
+  },
+  {
+    id: 'provincial_tierra',
+    label: 'Rutas provinciales de tierra',
+    cql: `administra='Provincial' AND tipo IN (${UNPAVED_TYPES})`,
+  },
+  {
+    id: 'local_pavimentada',
+    label: 'Calles/caminos locales pavimentados',
+    cql: `administra='Vecinal' AND tipo IN (${PAVED_TYPES})`,
+  },
+  {
+    id: 'local_tierra',
+    label: 'Calles/caminos locales sin pavimentar',
+    cql: `administra='Vecinal' AND tipo IN (${UNPAVED_TYPES})`,
+  },
+];
+
+/** Presets rapidos para red_vial: null = todas las clases. */
+export const ROAD_PRESETS = [
+  { id: 'todas', label: 'Todas', classes: null },
+  { id: 'rutas', label: 'Solo rutas', classes: ['nacional', 'provincial_pavimentada', 'provincial_tierra'] },
+  { id: 'locales', label: 'Solo locales', classes: ['local_pavimentada', 'local_tierra'] },
+];
+
+/** Componentes de vias_secundarias. */
+export const SECONDARY_CLASSES = [
+  { id: 'huella', label: 'Huella / rodera', cql: "tipo='Huella, Rodera'" },
+  { id: 'senda', label: 'Senda / camino de herradura', cql: "tipo='Senda, Camino de Herradura'" },
+  { id: 'picada', label: 'Picada / contrafuego', cql: "tipo='Picada, Contrafuego'" },
+];
+
+export const SECONDARY_PRESETS = [
+  { id: 'todas', label: 'Todas', classes: null },
+  { id: 'huellas', label: 'Solo huellas', classes: ['huella'] },
+  { id: 'senderos', label: 'Solo senderos', classes: ['senda', 'picada'] },
+];
+
+export const DEFAULT_ROAD_ACTIVE = ROAD_CLASSES.map((entry) => entry.id);
+export const DEFAULT_SECONDARY_ACTIVE = SECONDARY_CLASSES.map((entry) => entry.id);
+

@@ -9,7 +9,7 @@ import {
 const base = { baseUrl: 'http://localhost:8081/geoserver', workspace: 'sig' };
 
 describe('buildGetFeatureUrl', () => {
-  it('arma una consulta por rectangulo (bbox) en EPSG:4326', () => {
+  it('arma una consulta por rectangulo como BBOX CQL (axis order lat,lon)', () => {
     const url = buildGetFeatureUrl({
       ...base,
       layer: 'red_vial',
@@ -23,10 +23,11 @@ describe('buildGetFeatureUrl', () => {
     expect(params.get('typeName')).toBe('sig:red_vial');
     expect(params.get('srsName')).toBe('EPSG:4326');
     expect(params.get('outputFormat')).toBe('application/json');
-    expect(params.get('bbox')).toBe('-61,-28,-60,-27,EPSG:4326');
+    expect(params.get('CQL_FILTER')).toBe('BBOX(geom,-28,-61,-27,-60)');
+    expect(params.get('bbox')).toBeNull();
   });
 
-  it('arma una consulta por punto con un bbox de tolerancia', () => {
+  it('arma una consulta por punto con un BBOX de tolerancia', () => {
     const url = buildGetFeatureUrl({
       ...base,
       layer: 'localidades',
@@ -36,9 +37,41 @@ describe('buildGetFeatureUrl', () => {
       maxFeatures: 20,
     });
     const params = new URL(url).searchParams;
-    expect(params.get('bbox')).toBe('-58.99,-27.46,-58.97,-27.44,EPSG:4326');
+    expect(params.get('CQL_FILTER')).toBe('BBOX(geom,-27.46,-58.99,-27.44,-58.97)');
     expect(params.get('maxFeatures')).toBe('20');
-    expect(params.get('CQL_FILTER')).toBeNull();
+  });
+
+  it('combina el subfiltro de clases con el area', () => {
+    const url = buildGetFeatureUrl({
+      ...base,
+      layer: 'red_vial',
+      mode: 'bbox',
+      extent4326: [-61, -28, -60, -27],
+      cqlFilter: "administra='Nacional'",
+    });
+    expect(new URL(url).searchParams.get('CQL_FILTER')).toBe(
+      "BBOX(geom,-28,-61,-27,-60) AND (administra='Nacional')",
+    );
+  });
+
+  it('omite el subfiltro cuando vale 1=1 e incluye 1=0', () => {
+    const all = buildGetFeatureUrl({
+      ...base,
+      layer: 'red_vial',
+      mode: 'bbox',
+      extent4326: [-61, -28, -60, -27],
+      cqlFilter: '1=1',
+    });
+    expect(new URL(all).searchParams.get('CQL_FILTER')).toBe('BBOX(geom,-28,-61,-27,-60)');
+
+    const none = buildGetFeatureUrl({
+      ...base,
+      layer: 'red_vial',
+      mode: 'bbox',
+      extent4326: [-61, -28, -60, -27],
+      cqlFilter: '1=0',
+    });
+    expect(new URL(none).searchParams.get('CQL_FILTER')).toBe('BBOX(geom,-28,-61,-27,-60) AND (1=0)');
   });
 });
 

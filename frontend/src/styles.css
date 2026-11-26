@@ -241,6 +241,26 @@ button.primary {
   border-top: 1px solid #e3e8ee;
 }
 
+.sublayer {
+  margin: 2px 0 10px 24px;
+  padding: 4px 0 2px 10px;
+  border-left: 2px solid #e3e8ee;
+}
+
+.sublayer-presets {
+  margin-bottom: 4px;
+}
+
+.sublayer-presets button {
+  font-size: 11px;
+  padding: 2px 7px;
+}
+
+.layer-item.sub {
+  font-size: 12.5px;
+  padding: 2px 2px;
+}
+
 .legend-item {
   margin-bottom: 10px;
 }

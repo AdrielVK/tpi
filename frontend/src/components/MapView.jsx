@@ -58,6 +58,7 @@ export default function MapView({
   tool,
   results,
   overlayClearKey,
+  wmsFilters,
   onMeasure,
   onQuery,
   onInsertPoint,
@@ -151,6 +152,17 @@ export default function MapView({
       layer.setVisible(Boolean(visible[id]));
     }
   }, [visible]);
+
+  useEffect(() => {
+    if (!wmsRef.current) return;
+    for (const [id, expression] of Object.entries(wmsFilters ?? {})) {
+      const source = wmsRef.current.get(id)?.getSource();
+      if (!source) continue;
+      const next = expression || '1=1';
+      if (source.getParams().CQL_FILTER === next) continue;
+      source.updateParams({ CQL_FILTER: next });
+    }
+  }, [wmsFilters]);
 
   useEffect(() => {
     const map = mapRef.current;

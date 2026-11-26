@@ -1,7 +1,59 @@
 import { useMemo, useState } from 'react';
 
+/** Subfiltro de componentes de una red (checkboxes + presets). */
+function SubFilter({ classes, active, presets, onToggle, onPreset }) {
+  const allIds = classes.map((entry) => entry.id);
+
+  return (
+    <div className="sublayer">
+      <div className="row-actions sublayer-presets">
+        {presets.map((preset) => {
+          const ids = preset.classes ?? allIds;
+          const isActive = ids.length === active.length && ids.every((id) => active.includes(id));
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              className={isActive ? 'active' : ''}
+              onClick={() => onPreset(preset)}
+            >
+              {preset.label}
+            </button>
+          );
+        })}
+      </div>
+      {classes.map((entry) => (
+        <label key={entry.id} className="layer-item sub">
+          <input
+            type="checkbox"
+            checked={active.includes(entry.id)}
+            onChange={() => onToggle(entry.id)}
+          />
+          <span>{entry.label}</span>
+        </label>
+      ))}
+      <p className="muted small">Aplica al mapa y a las consultas.</p>
+    </div>
+  );
+}
+
 /** Catalogo de capas agrupado por tema, con buscador y activacion por capa. */
-export default function LayerPanel({ layers, visible, onToggle, onAll }) {
+export default function LayerPanel({
+  layers,
+  visible,
+  onToggle,
+  onAll,
+  roadClasses,
+  roadActive,
+  onRoadToggle,
+  onRoadPreset,
+  secondaryClasses,
+  secondaryActive,
+  onSecondaryToggle,
+  onSecondaryPreset,
+  roadPresets,
+  secondaryPresets,
+}) {
   const [search, setSearch] = useState('');
 
   const groups = useMemo(() => {
@@ -42,10 +94,30 @@ export default function LayerPanel({ layers, visible, onToggle, onAll }) {
         <section key={group} className="layer-group">
           <h3>{group}</h3>
           {items.map((layer) => (
-            <label key={layer.id} className={`layer-item${visible[layer.id] ? ' on' : ''}`}>
-              <input type="checkbox" checked={Boolean(visible[layer.id])} onChange={() => onToggle(layer.id)} />
-              <span>{layer.label}</span>
-            </label>
+            <div key={layer.id}>
+              <label className={`layer-item${visible[layer.id] ? ' on' : ''}`}>
+                <input type="checkbox" checked={Boolean(visible[layer.id])} onChange={() => onToggle(layer.id)} />
+                <span>{layer.label}</span>
+              </label>
+              {layer.id === 'red_vial' && visible.red_vial && (
+                <SubFilter
+                  classes={roadClasses}
+                  active={roadActive}
+                  presets={roadPresets}
+                  onToggle={onRoadToggle}
+                  onPreset={onRoadPreset}
+                />
+              )}
+              {layer.id === 'vias_secundarias' && visible.vias_secundarias && (
+                <SubFilter
+                  classes={secondaryClasses}
+                  active={secondaryActive}
+                  presets={secondaryPresets}
+                  onToggle={onSecondaryToggle}
+                  onPreset={onSecondaryPreset}
+                />
+              )}
+            </div>
           ))}
         </section>
       ))}
