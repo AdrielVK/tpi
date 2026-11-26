@@ -320,12 +320,20 @@ Estas credenciales son solo para el entorno local del TP. No usarlas en un entor
 
 ## Estado del trabajo y pendientes
 
+### Hecho
+
 - [x] Entorno Docker (PostGIS, GeoServer, pgAdmin)
 - [x] Carga de las capas del IGN en PostGIS (esquema `ign250`)
 - [x] Publicación de las capas en GeoServer (WMS / WFS)
-- [x] Estilos SLD de vías de comunicación en `servidor/estilos/` (el resto de las capas usa el estilo por defecto)
 - [x] Capa editable `observaciones` publicada con WFS-T
-- [ ] Análisis de la RN11 (longitud, buffers de 10 y 20 km, población, puentes)
-- [x] Aplicación web en `frontend/` (visualización, capas, leyenda, consultas, medición y alta WFS-T)
-- [ ] Informe (consigna b)
+- [x] Estilos SLD de vías de comunicación en `servidor/estilos/`: jerarquía por clase, gama de color y ancho adaptado a la escala (piso desde 1:2.000.000)
+- [x] Aplicación web en `frontend/` (consigna a.3): navegación, activar/desactivar capas, leyenda, consultas por punto/área, medición y alta WFS-T
+- [x] Subfiltro por componente de las redes viales (rutas, caminos, calles, huellas/senderos)
+- [x] Rediseño de UI "Meridiano Glass": glassmorphism, paneles flotantes, tema claro/oscuro, paneles colapsables, opacidad por capa
+
+### Pendiente
+
+- [ ] Estilos SLD del resto de las capas (hidrografía, suelos, vegetación, etc.) y de `localidades` (hoy usan el estilo por defecto de GeoServer)
+- [ ] Análisis de la RN11 (longitud, buffers de 10 y 20 km, población, puentes) — consigna b
+- [ ] Informe de la consigna b
 - [ ] Mapa A4 en PDF (consigna c)
