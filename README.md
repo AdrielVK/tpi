@@ -119,6 +119,15 @@ chmod +x scripts/crear_geoserver.sh
 
 Cada línea de publicación debe devolver `HTTP 201`. El workspace y el store pueden devolver `HTTP 401` o `409` si ya existían; no es un problema.
 
+Después de publicar las capas, cargá los estilos de las vías de comunicación (jerarquía de rutas y símbolos):
+
+```bash
+chmod +x scripts/estilos.sh
+./scripts/estilos.sh
+```
+
+Debe devolver `HTTP 201` al crear cada estilo y `HTTP 200` al asignarlo. El script es idempotente (si el estilo ya existe, lo actualiza con `PUT`).
+
 Entrá a la interfaz:
 
 - URL: <http://localhost:8081/geoserver>
@@ -126,6 +135,30 @@ Entrá a la interfaz:
 - Contraseña: `geoserver`
 
 Revisá en *Data → Layers* que estén las capas del workspace `sig`.
+
+### Criterio de color de las vías de comunicación
+
+**Clasificación.** La capa `red_vial` no distingue urbano/rural: la jerarquía se arma combinando `administra` × `tipo`. La red `Vecinal` es la red local (calles y caminos). Los cinco niveles de más a menos importante:
+
+| Nivel | Filtro sobre `red_vial` | Grosor | Color | Casing |
+|---|---|---|---|---|
+| 1. Ruta nacional / internacional | `administra IN (Nacional, Internacional)` | 4.0 px (2x) | `#b3261e` | `#5c0f0a` |
+| 2. Ruta provincial pavimentada | `Provincial` + `tipo LIKE '%Pavimentado%'` | 3.0 px (1.5x) | `#e07b27` | `#7d420c` |
+| 3. Ruta provincial de tierra | `Provincial` + no pavimentado | 2.0 px (1x) | `#f0b95f` | `#92701f` |
+| 4. Calle/camino local pavimentado | `Vecinal` + pavimentado | 2.0 px (1x) | `#f6dea6` | `#8f8260` |
+| 5. Calle/camino local sin pavimentar | `Vecinal` + no pavimentado | 1.6 px (0.8x) | `#fbf2d8` | `#9a9384` |
+
+Partición verificada: 8060 + 7678 + 9255 + 2744 + 91218 = 118955 features, sin solapamiento.
+
+**Resto de vías.** `vias_secundarias` (huellas y senderos) usa otra familia, marrón/ocre, con la misma lógica: Huella/Rodera `#8d5a1e` (1x), Senda `#b07b33` (0.8x), Picada `#d3a86a` (0.6x, discontinua). `red_ferroviaria` usa el símbolo convencional (gris oscuro con trazos blancos); puentes, señalizaciones, marcas y salvado de obstáculo usan símbolos puntuales.
+
+**Por qué esa gama.**
+- El **Manual de signos cartográficos del IGN** (en `servidor/capas/`) define los signos 41–48 (autopista, camino pavimentado, consolidado, tierra, huella, senda, picada) y un sistema de color de reproducción **CMYK** para imprenta. No fija una paleta RGB para web.
+- No existe una norma ISO que obligue a colores de rutas: los estándares son nacionales (IGN, USGS, Ordnance Survey) o de facto. El más documentado y abierto es **OSM Carto**, que usa exactamente una rampa cálida con casing: motorway `#e892a2`, trunk `#f9b29c`, primary `#fcd6a4`, secondary `#f7fabf`, residential `#ffffff` (casing `#bbb`).
+- El criterio sigue las variables visuales de Bertin/Imhof: el **tono** identifica "esto es una vía" (cualitativo) y la **luminosidad** codifica la importancia (ordinal), de oscuro a claro. Los tonos cálidos contrastan con el fondo claro y con los accidentes fríos (agua, vegetación); el nivel más claro se mantiene legible por el casing gris.
+- Referencias: `openstreetmap-carto/style/road-colors-generated.mss`; Manual IGN, signos 41–48.
+
+**Nota de datos.** `vias_secundarias` casi no tiene features en Chaco (se concentran en Patagonia), así que es esperable no verlas en la vista provincial. La capa no trae atributo urbano/rural: "Vecinal" se usa para calles y caminos locales.
 
 ## 8. Probar que todo funciona
 
@@ -195,7 +228,7 @@ npm test        # tests de los helpers (Vitest)
 npm run build   # build de producción en frontend/dist
 ```
 
-> La leyenda usa el estilo por defecto de GeoServer hasta que se carguen los SLD por clase (pendiente "Estilos SLD"). La vista del mapa trabaja en EPSG:3857; los datos se consultan y escriben en EPSG:4326.
+> La leyenda se genera con GetLegendGraphic: las capas de vías de comunicación ya tienen SLD por clase, así que muestran su jerarquía real. El resto de las capas usa el estilo por defecto de GeoServer. La vista del mapa trabaja en EPSG:3857; los datos se consultan y escriben en EPSG:4326.
 
 ---
 
@@ -274,7 +307,7 @@ Estas credenciales son solo para el entorno local del TP. No usarlas en un entor
 - [x] Entorno Docker (PostGIS, GeoServer, pgAdmin)
 - [x] Carga de las capas del IGN en PostGIS (esquema `ign250`)
 - [x] Publicación de las capas en GeoServer (WMS / WFS)
-- [ ] Estilos SLD en `servidor/estilos/`
+- [x] Estilos SLD de vías de comunicación en `servidor/estilos/` (el resto de las capas usa el estilo por defecto)
 - [x] Capa editable `observaciones` publicada con WFS-T
 - [ ] Análisis de la RN11 (longitud, buffers de 10 y 20 km, población, puentes)
 - [x] Aplicación web en `frontend/` (visualización, capas, leyenda, consultas, medición y alta WFS-T)
