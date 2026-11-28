@@ -11,15 +11,18 @@ curl -s -u "$AUTH" -XPOST -H "Content-type: text/xml" \
 
 echo "== Store PostGIS"
 curl -s -u "$AUTH" -XPOST -H "Content-type: text/xml" \
-  -d "<dataStore><name>ign250</name><connectionParameters>
-        <entry key=\"dbtype\">postgis</entry>
-        <entry key=\"host\">postgis</entry>
-        <entry key=\"port\">5432</entry>
-        <entry key=\"database\">tpi</entry>
-        <entry key=\"schema\">ign250</entry>
-        <entry key=\"user\">postgres</entry>
-        <entry key=\"passwd\">postgres</entry>
-      </connectionParameters></dataStore>" \
+  -d "<dataStore>
+        <name>ign250</name>
+        <connectionParameters>
+          <host>postgis</host>
+          <port>5432</port>
+          <database>tpi</database>
+          <schema>ign250</schema>
+          <user>postgres</user>
+          <passwd>postgres</passwd>
+          <dbtype>postgis</dbtype>
+        </connectionParameters>
+      </dataStore>" \
   "$GS/workspaces/sig/datastores" -o /dev/null -w "HTTP %{http_code}\n"
 
 echo "== Publicando capas"

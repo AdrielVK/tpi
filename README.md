@@ -205,11 +205,11 @@ Requisitos: Node.js 18+ (probado con 22) y los contenedores del paso 5 levantado
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-Abrí <http://localhost:5173>.
+Abrí <http://127.0.0.1:5173>.
 
 Funcionalidades (consigna a.3):
 
@@ -227,9 +227,14 @@ Configuración opcional (variables de entorno al ejecutar `npm run dev`):
 
 | Variable | Default | Uso |
 |---|---|---|
-| `VITE_GEOSERVER_URL` | `http://localhost:8081/geoserver` | URL base de GeoServer |
+| `VITE_GEOSERVER_URL` | `/geoserver` (mismo origen que el visor) | URL base de GeoServer en el navegador |
+| `GEOSERVER_URL` | `http://[::1]:8081` | Destino del proxy de Vite, sin `/geoserver` |
 | `VITE_GEOSERVER_USER` | `admin` | Usuario para WFS-T (solo desarrollo) |
 | `VITE_GEOSERVER_PASSWORD` | `geoserver` | Contraseña para WFS-T (solo desarrollo) |
+
+Podés definir estas variables en `frontend/.env.local` y reiniciar Vite. El proxy usa IPv6 para acceder al contenedor en esta máquina, donde otro proceso Java ocupa `127.0.0.1:8081`. Si GeoServer escucha por IPv4 en tu equipo, usá `GEOSERVER_URL=http://127.0.0.1:8081`.
+
+`npm run preview` permite probar la compilación con el mismo proxy. Para servir `frontend/dist` desde otro servidor web, configurá `/geoserver` hacia tu instancia de GeoServer o compilá con `VITE_GEOSERVER_URL` apuntando a su URL pública.
 
 > El alta por WFS-T exige autenticación porque GeoServer no permite escritura anónima. Son las credenciales de desarrollo del compose; no usarlas en un entorno real.
 

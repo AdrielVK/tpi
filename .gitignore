@@ -1,5 +1,6 @@
 # Datos pesados / dumps (no versionar)
 servidor/capas/datos/
+servidor/capas/SIG_IGN2011/
 servidor/*.dump
 servidor/*.tgz
 servidor/carga.log

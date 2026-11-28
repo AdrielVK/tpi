@@ -3,10 +3,10 @@
  * El origen de datos es el GeoServer del TP (docker-compose del repo).
  */
 
-const rawUrl = import.meta.env.VITE_GEOSERVER_URL ?? 'http://localhost:8081/geoserver';
+const rawUrl = import.meta.env.VITE_GEOSERVER_URL ?? '/geoserver';
 
 /** URL base de GeoServer, sin barra final. */
-export const GEOSERVER_URL = String(rawUrl).replace(/\/$/, '');
+export const GEOSERVER_URL = new URL(String(rawUrl), window.location.origin).href.replace(/\/$/, '');
 export const WORKSPACE = 'sig';
 /** Namespace XML de las features del workspace (confirmado por DescribeFeatureType). */
 export const FEATURE_NS = 'http://sig.local';
@@ -175,4 +175,3 @@ export const SECONDARY_PRESETS = [
 
 export const DEFAULT_ROAD_ACTIVE = ROAD_CLASSES.map((entry) => entry.id);
 export const DEFAULT_SECONDARY_ACTIVE = SECONDARY_CLASSES.map((entry) => entry.id);
-
